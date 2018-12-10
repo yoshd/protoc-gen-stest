@@ -1,0 +1,30 @@
+[
+    {
+        "action": "Hello",
+        "request": {
+            "req_msg": "Hello!"
+        },
+        "expected_response": {
+            "res_msg": "Hello!"
+        },
+        "error_expectation": false
+    },
+    {
+        "action": "Bye",
+        "request": {
+            "req_msg": "Bye!"
+        },
+        "expected_response": {
+            "res_msg": "Bye!"
+        },
+        "error_expectation": false
+    },
+    {
+        "action": "Bye",
+        "request": {
+            "req_msg": "error"
+        },
+        "error_expectation": true,
+        "expected_error_code": 3
+    }
+]

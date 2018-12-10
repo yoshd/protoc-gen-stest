@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option go_package = "pb";
+
+service Sample {
+    rpc Hello (HelloRequest) returns (HelloResponse) {
+    }
+    rpc Bye (ByeRequest) returns (ByeResponse) {
+    }
+}
+
+message HelloRequest {
+    string req_msg = 1;
+}
+message HelloResponse {
+    string res_msg = 1;
+}
+message ByeRequest {
+    string req_msg = 1;
+}
+message ByeResponse {
+    string res_msg = 1;
+}
