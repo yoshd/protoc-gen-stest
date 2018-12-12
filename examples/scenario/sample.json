@@ -7,7 +7,9 @@
         "expected_response": {
             "res_msg": "Hello!"
         },
-        "error_expectation": false
+        "loop": 2,
+        "sleep": 3,
+        "success_rule": "once"
     },
     {
         "action": "Bye",
@@ -17,7 +19,9 @@
         "expected_response": {
             "res_msg": "Bye!"
         },
-        "error_expectation": false
+        "loop": 3,
+        "sleep": 1,
+        "success_rule": "all"
     },
     {
         "action": "Bye",

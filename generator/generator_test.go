@@ -156,9 +156,11 @@ package pb
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"reflect"
 	"testing"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -177,8 +179,8 @@ func NewTestClient(client TestServiceClient) *TestServiceTestRunner {
 }
 
 // RunGRPCTest sends a gPRC request according to the scenario written in the JSON file and tests the response.
-// testHandlerMap takes a gRPC method name as a key and value has a function that compares expected response and actual response and defines how to handle the test.
-func (runner *TestServiceTestRunner) RunGRPCTest(t *testing.T, jsonPath string, testHandlerMap map[string]*func(t *testing.T, expectedResponse, response interface{})) {
+// compareFuncMap takes a gRPC method name as a key and value has a function that compares expected response and actual response and return an error.
+func (runner *TestServiceTestRunner) RunGRPCTest(t *testing.T, jsonPath string, compareFuncMap map[string]*func(expectedResponse, response interface{}) error) {
 	scenarioData, err := ioutil.ReadFile(jsonPath)
 	if err != nil {
 		panic(err)
@@ -187,7 +189,7 @@ func (runner *TestServiceTestRunner) RunGRPCTest(t *testing.T, jsonPath string, 
 	json.Unmarshal(scenarioData, &scenario)
 	for _, testCase := range scenario {
 		ctx := context.Background()
-		runner.runTest(ctx, t, testCase, testHandlerMap)
+		runner.runTest(ctx, t, testCase, compareFuncMap)
 	}
 }
 
@@ -197,87 +199,172 @@ const (
 	expectedResponseJSONKey  = "expected_response"
 	errorExpectationJSONKey  = "error_expectation"
 	expectedErrorCodeJSONKey = "expected_error_code"
-	skipMessage              = "Skip comparing expected response and actual response"
+	loopJSONKey              = "loop"
+	sleepJSONKey             = "sleep"
+	successRuleJSONKey       = "success_rule"
+	successRuleAll           = "all"
+	successRuleOnce          = "once"
 )
 
-func (runner *TestServiceTestRunner) runTest(ctx context.Context, t *testing.T, testCase map[string]interface{}, testHandlerMap map[string]*func(t *testing.T, expectedResponse, response interface{})) {
-	action := testCase[actionJSONKey].(string)
+func (runner *TestServiceTestRunner) runTest(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFuncMap map[string]*func(expectedResponse, response interface{}) error) {
+	var action string
+	if v, ok := testCase[actionJSONKey]; ok {
+		action = v.(string)
+	} else {
+		panic("Scenario JSON is invalid. Because action is required.")
+	}
 	f := func(t *testing.T) {
 		switch action {
 		case "Hello":
-			testHandler := testHandlerMap["Hello"]
-			runner.testHello(ctx, t, testCase, testHandler)
+			compareFunc := compareFuncMap["Hello"]
+			runner.testHello(ctx, t, testCase, compareFunc)
 		case "Bye":
-			testHandler := testHandlerMap["Bye"]
-			runner.testBye(ctx, t, testCase, testHandler)
+			compareFunc := compareFuncMap["Bye"]
+			runner.testBye(ctx, t, testCase, compareFunc)
 		}
 	}
 	t.Run(action, f)
 }
 
-func (runner *TestServiceTestRunner) testHello(ctx context.Context, t *testing.T, testCase map[string]interface{}, testHandler *func(t *testing.T, expectedResponse, response interface{})) {
+func (runner *TestServiceTestRunner) testHello(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFunc *func(expectedResponse, response interface{}) error) {
 	reqJSON, reqErr := json.Marshal(testCase[requestJSONKey])
 	if reqErr != nil {
 		panic(reqErr)
 	}
 	req := HReq{}
 	json.Unmarshal(reqJSON, &req)
-	res, err := runner.Client.Hello(ctx, &req)
-	errExpectation := testCase[errorExpectationJSONKey].(bool)
-	if errExpectation {
-		errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
-		errCodeU := uint32(errCodeF)
-		expectedErrCode := codes.Code(errCodeU)
-		if expectedErrCode != grpc.Code(err) {
-			t.Fatalf("The error code of the response of Hello is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+
+	loop := 1
+	if v, ok := testCase[loopJSONKey]; ok {
+		loop = int(v.(float64))
+	}
+FOR_LABEL:
+	for i := 1; i <= loop; i++ {
+		sleep := 0
+		if v, ok := testCase[sleepJSONKey]; ok {
+			sleep = int(v.(float64))
 		}
-	} else {
-		resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
-		if resErr != nil {
-			panic(resErr)
+		time.Sleep(time.Duration(sleep) * time.Second)
+
+		res, err := runner.Client.Hello(ctx, &req)
+
+		errExpectation := false
+		if v, ok := testCase[errorExpectationJSONKey]; ok {
+			errExpectation = v.(bool)
 		}
-		expectedRes := HRes{}
-		json.Unmarshal(resJSON, &expectedRes)
-		if testHandler != nil {
-			handler := *testHandler
-			handler(t, expectedRes, *res)
+		if errExpectation {
+			errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
+			errCodeU := uint32(errCodeF)
+			expectedErrCode := codes.Code(errCodeU)
+			if expectedErrCode != grpc.Code(err) {
+				t.Fatalf("The error code of the response of Hello is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+			}
+			break FOR_LABEL
 		} else {
-			if !reflect.DeepEqual(expectedRes, *res) {
-				t.Fatal("The actual response of the Hello was not equal to the expected response.")
+			resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
+			if resErr != nil {
+				panic(resErr)
+			}
+			expectedRes := HRes{}
+			json.Unmarshal(resJSON, &expectedRes)
+			successRule := successRuleAll
+			if v, ok := testCase[successRuleJSONKey]; ok {
+				successRule = v.(string)
+			}
+			var err error
+			if compareFunc != nil {
+				compare := *compareFunc
+				err = compare(expectedRes, *res)
+			} else {
+				if !reflect.DeepEqual(expectedRes, *res) {
+					err = errors.New("The actual response of the Hello was not equal to the expected response")
+				}
+			}
+
+			switch successRule {
+			case successRuleAll:
+				if err != nil {
+					t.Fatal(err.Error())
+				}
+			case successRuleOnce:
+				if i == loop && err != nil {
+					t.Fatal(err.Error())
+				}
+				if err == nil {
+					break FOR_LABEL
+				}
 			}
 		}
 	}
 }
 
-func (runner *TestServiceTestRunner) testBye(ctx context.Context, t *testing.T, testCase map[string]interface{}, testHandler *func(t *testing.T, expectedResponse, response interface{})) {
+func (runner *TestServiceTestRunner) testBye(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFunc *func(expectedResponse, response interface{}) error) {
 	reqJSON, reqErr := json.Marshal(testCase[requestJSONKey])
 	if reqErr != nil {
 		panic(reqErr)
 	}
 	req := BReq{}
 	json.Unmarshal(reqJSON, &req)
-	res, err := runner.Client.Bye(ctx, &req)
-	errExpectation := testCase[errorExpectationJSONKey].(bool)
-	if errExpectation {
-		errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
-		errCodeU := uint32(errCodeF)
-		expectedErrCode := codes.Code(errCodeU)
-		if expectedErrCode != grpc.Code(err) {
-			t.Fatalf("The error code of the response of Bye is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+
+	loop := 1
+	if v, ok := testCase[loopJSONKey]; ok {
+		loop = int(v.(float64))
+	}
+FOR_LABEL:
+	for i := 1; i <= loop; i++ {
+		sleep := 0
+		if v, ok := testCase[sleepJSONKey]; ok {
+			sleep = int(v.(float64))
 		}
-	} else {
-		resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
-		if resErr != nil {
-			panic(resErr)
+		time.Sleep(time.Duration(sleep) * time.Second)
+
+		res, err := runner.Client.Bye(ctx, &req)
+
+		errExpectation := false
+		if v, ok := testCase[errorExpectationJSONKey]; ok {
+			errExpectation = v.(bool)
 		}
-		expectedRes := BRes{}
-		json.Unmarshal(resJSON, &expectedRes)
-		if testHandler != nil {
-			handler := *testHandler
-			handler(t, expectedRes, *res)
+		if errExpectation {
+			errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
+			errCodeU := uint32(errCodeF)
+			expectedErrCode := codes.Code(errCodeU)
+			if expectedErrCode != grpc.Code(err) {
+				t.Fatalf("The error code of the response of Bye is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+			}
+			break FOR_LABEL
 		} else {
-			if !reflect.DeepEqual(expectedRes, *res) {
-				t.Fatal("The actual response of the Bye was not equal to the expected response.")
+			resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
+			if resErr != nil {
+				panic(resErr)
+			}
+			expectedRes := BRes{}
+			json.Unmarshal(resJSON, &expectedRes)
+			successRule := successRuleAll
+			if v, ok := testCase[successRuleJSONKey]; ok {
+				successRule = v.(string)
+			}
+			var err error
+			if compareFunc != nil {
+				compare := *compareFunc
+				err = compare(expectedRes, *res)
+			} else {
+				if !reflect.DeepEqual(expectedRes, *res) {
+					err = errors.New("The actual response of the Bye was not equal to the expected response")
+				}
+			}
+
+			switch successRule {
+			case successRuleAll:
+				if err != nil {
+					t.Fatal(err.Error())
+				}
+			case successRuleOnce:
+				if i == loop && err != nil {
+					t.Fatal(err.Error())
+				}
+				if err == nil {
+					break FOR_LABEL
+				}
 			}
 		}
 	}
