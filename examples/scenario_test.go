@@ -32,7 +32,7 @@ func setUp() {
 		er := expectedResponse.(pb.HelloResponse)
 		r := response.(pb.HelloResponse)
 		if er.ResMsg != r.ResMsg {
-			return errors.New("The actual response of the Hello was not equal to the expected response")
+			return errors.New("the actual response of the Hello was not equal to the expected response")
 		}
 		return nil
 	}
@@ -44,7 +44,7 @@ func setUp() {
 		er := expectedResponse.(pb.ByeResponse)
 		r := response.(pb.ByeResponse)
 		if er.ResMsg != r.ResMsg {
-			return errors.New("The actual response of the Bye was not equal to the expected response")
+			return errors.New("the actual response of the Bye was not equal to the expected response")
 		}
 		return nil
 	}

@@ -257,7 +257,7 @@ FOR_LABEL:
 			errCodeU := uint32(errCodeF)
 			expectedErrCode := codes.Code(errCodeU)
 			if expectedErrCode != grpc.Code(err) {
-				t.Fatalf("The error code of the response of Hello is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+				t.Fatalf("the error code of the response of Hello is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
 			}
 			break FOR_LABEL
 		} else {
@@ -277,7 +277,7 @@ FOR_LABEL:
 				err = compare(expectedRes, *res)
 			} else {
 				if !reflect.DeepEqual(expectedRes, *res) {
-					err = errors.New("The actual response of the Hello was not equal to the expected response")
+					err = errors.New("the actual response of the Hello was not equal to the expected response")
 				}
 			}
 
@@ -329,7 +329,7 @@ FOR_LABEL:
 			errCodeU := uint32(errCodeF)
 			expectedErrCode := codes.Code(errCodeU)
 			if expectedErrCode != grpc.Code(err) {
-				t.Fatalf("The error code of the response of Bye is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
+				t.Fatalf("the error code of the response of Bye is not as expected. Expected: %d, Actual: %d\n", expectedErrCode, grpc.Code(err))
 			}
 			break FOR_LABEL
 		} else {
@@ -349,7 +349,7 @@ FOR_LABEL:
 				err = compare(expectedRes, *res)
 			} else {
 				if !reflect.DeepEqual(expectedRes, *res) {
-					err = errors.New("The actual response of the Bye was not equal to the expected response")
+					err = errors.New("the actual response of the Bye was not equal to the expected response")
 				}
 			}
 
