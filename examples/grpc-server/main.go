@@ -24,7 +24,7 @@ func (s *server) Hello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRespo
 
 func (s *server) Bye(ctx context.Context, in *pb.ByeRequest) (*pb.ByeResponse, error) {
 	if in.ReqMsg == "error" {
-		return nil, status.Errorf(codes.InvalidArgument, "Invalid argument")
+		return nil, status.Errorf(codes.InvalidArgument, "invalid argument")
 	}
 	return &pb.ByeResponse{ResMsg: "Bye!"}, nil
 }
