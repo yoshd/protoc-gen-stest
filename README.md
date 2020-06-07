@@ -1,6 +1,8 @@
+![test](https://github.com/yoshd/protoc-gen-stest/workflows/Go/badge.svg)
+
 # protoc-gen-stest
 
-This is a protoc plugin which generates golang source code for gRPC scenario test.
+This is a protoc plugin which generates golang source code for gRPC scenario test (only Unary).
 The plugin can test the gRPC methods defined in your .proto file.
 The necessary preparation is the source code that calls the test using your .proto file and the JSON file that defines the test scenario, and the simple gRPC service client and testing package.
 
