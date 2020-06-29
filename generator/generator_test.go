@@ -151,7 +151,7 @@ func TestGenerateGRPCTestCode(t *testing.T) {
 }
 
 var expectedCode = `
-package pb
+package test
 
 import (
 	"context"
@@ -164,15 +164,18 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	empty "github.com/golang/protobuf/ptypes/empty"
+
+	"grpc-scenario-test/pb"
 )
 
 // TestServiceTestRunner is a runner to run the TestService service test.
 type TestServiceTestRunner struct {
-	Client TestServiceClient
+	Client pb.TestServiceClient
 }
 
-// NewTestClient returns new TestServiceRunner.
-func NewTestClient(client TestServiceClient) *TestServiceTestRunner {
+// NewTestTestServiceClient returns new TestServiceRunner.
+func NewTestTestServiceClient(client pb.TestServiceClient) *TestServiceTestRunner {
 	return &TestServiceTestRunner{
 		Client: client,
 	}
@@ -194,21 +197,21 @@ func (runner *TestServiceTestRunner) RunGRPCTest(t *testing.T, jsonPath string, 
 }
 
 const (
-	actionJSONKey            = "action"
-	requestJSONKey           = "request"
-	expectedResponseJSONKey  = "expected_response"
-	errorExpectationJSONKey  = "error_expectation"
-	expectedErrorCodeJSONKey = "expected_error_code"
-	loopJSONKey              = "loop"
-	sleepJSONKey             = "sleep"
-	successRuleJSONKey       = "success_rule"
-	successRuleAll           = "all"
-	successRuleOnce          = "once"
+	TestService_actionJSONKey            = "action"
+	TestService_requestJSONKey           = "request"
+	TestService_expectedResponseJSONKey  = "expected_response"
+	TestService_errorExpectationJSONKey  = "error_expectation"
+	TestService_expectedErrorCodeJSONKey = "expected_error_code"
+	TestService_loopJSONKey              = "loop"
+	TestService_sleepJSONKey             = "sleep"
+	TestService_successRuleJSONKey       = "success_rule"
+	TestService_successRuleAll           = "all"
+	TestService_successRuleOnce          = "once"
 )
 
 func (runner *TestServiceTestRunner) runTest(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFuncMap map[string]*func(expectedResponse, response interface{}) error) {
 	var action string
-	if v, ok := testCase[actionJSONKey]; ok {
+	if v, ok := testCase[TestService_actionJSONKey]; ok {
 		action = v.(string)
 	} else {
 		panic("Scenario JSON is invalid. Because action is required.")
@@ -227,7 +230,7 @@ func (runner *TestServiceTestRunner) runTest(ctx context.Context, t *testing.T, 
 }
 
 func (runner *TestServiceTestRunner) testHello(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFunc *func(expectedResponse, response interface{}) error) {
-	reqJSON, reqErr := json.Marshal(testCase[requestJSONKey])
+	reqJSON, reqErr := json.Marshal(testCase[TestService_requestJSONKey])
 	if reqErr != nil {
 		panic(reqErr)
 	}
@@ -235,13 +238,13 @@ func (runner *TestServiceTestRunner) testHello(ctx context.Context, t *testing.T
 	json.Unmarshal(reqJSON, &req)
 
 	loop := 1
-	if v, ok := testCase[loopJSONKey]; ok {
+	if v, ok := testCase[TestService_loopJSONKey]; ok {
 		loop = int(v.(float64))
 	}
 FOR_LABEL:
 	for i := 1; i <= loop; i++ {
 		sleep := 0
-		if v, ok := testCase[sleepJSONKey]; ok {
+		if v, ok := testCase[TestService_sleepJSONKey]; ok {
 			sleep = int(v.(float64))
 		}
 		time.Sleep(time.Duration(sleep) * time.Second)
@@ -249,11 +252,11 @@ FOR_LABEL:
 		res, err := runner.Client.Hello(ctx, &req)
 
 		errExpectation := false
-		if v, ok := testCase[errorExpectationJSONKey]; ok {
+		if v, ok := testCase[TestService_errorExpectationJSONKey]; ok {
 			errExpectation = v.(bool)
 		}
 		if errExpectation {
-			errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
+			errCodeF := testCase[TestService_expectedErrorCodeJSONKey].(float64)
 			errCodeU := uint32(errCodeF)
 			expectedErrCode := codes.Code(errCodeU)
 			if expectedErrCode != grpc.Code(err) {
@@ -261,14 +264,14 @@ FOR_LABEL:
 			}
 			break FOR_LABEL
 		} else {
-			resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
+			resJSON, resErr := json.Marshal(testCase[TestService_expectedResponseJSONKey])
 			if resErr != nil {
 				panic(resErr)
 			}
 			expectedRes := HRes{}
 			json.Unmarshal(resJSON, &expectedRes)
-			successRule := successRuleAll
-			if v, ok := testCase[successRuleJSONKey]; ok {
+			successRule := TestService_successRuleAll
+			if v, ok := testCase[TestService_successRuleJSONKey]; ok {
 				successRule = v.(string)
 			}
 			var err error
@@ -282,11 +285,11 @@ FOR_LABEL:
 			}
 
 			switch successRule {
-			case successRuleAll:
+			case TestService_successRuleAll:
 				if err != nil {
 					t.Fatal(err.Error())
 				}
-			case successRuleOnce:
+			case TestService_successRuleOnce:
 				if i == loop && err != nil {
 					t.Fatal(err.Error())
 				}
@@ -299,7 +302,7 @@ FOR_LABEL:
 }
 
 func (runner *TestServiceTestRunner) testBye(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFunc *func(expectedResponse, response interface{}) error) {
-	reqJSON, reqErr := json.Marshal(testCase[requestJSONKey])
+	reqJSON, reqErr := json.Marshal(testCase[TestService_requestJSONKey])
 	if reqErr != nil {
 		panic(reqErr)
 	}
@@ -307,13 +310,13 @@ func (runner *TestServiceTestRunner) testBye(ctx context.Context, t *testing.T, 
 	json.Unmarshal(reqJSON, &req)
 
 	loop := 1
-	if v, ok := testCase[loopJSONKey]; ok {
+	if v, ok := testCase[TestService_loopJSONKey]; ok {
 		loop = int(v.(float64))
 	}
 FOR_LABEL:
 	for i := 1; i <= loop; i++ {
 		sleep := 0
-		if v, ok := testCase[sleepJSONKey]; ok {
+		if v, ok := testCase[TestService_sleepJSONKey]; ok {
 			sleep = int(v.(float64))
 		}
 		time.Sleep(time.Duration(sleep) * time.Second)
@@ -321,11 +324,11 @@ FOR_LABEL:
 		res, err := runner.Client.Bye(ctx, &req)
 
 		errExpectation := false
-		if v, ok := testCase[errorExpectationJSONKey]; ok {
+		if v, ok := testCase[TestService_errorExpectationJSONKey]; ok {
 			errExpectation = v.(bool)
 		}
 		if errExpectation {
-			errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
+			errCodeF := testCase[TestService_expectedErrorCodeJSONKey].(float64)
 			errCodeU := uint32(errCodeF)
 			expectedErrCode := codes.Code(errCodeU)
 			if expectedErrCode != grpc.Code(err) {
@@ -333,14 +336,14 @@ FOR_LABEL:
 			}
 			break FOR_LABEL
 		} else {
-			resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
+			resJSON, resErr := json.Marshal(testCase[TestService_expectedResponseJSONKey])
 			if resErr != nil {
 				panic(resErr)
 			}
 			expectedRes := BRes{}
 			json.Unmarshal(resJSON, &expectedRes)
-			successRule := successRuleAll
-			if v, ok := testCase[successRuleJSONKey]; ok {
+			successRule := TestService_successRuleAll
+			if v, ok := testCase[TestService_successRuleJSONKey]; ok {
 				successRule = v.(string)
 			}
 			var err error
@@ -354,11 +357,11 @@ FOR_LABEL:
 			}
 
 			switch successRule {
-			case successRuleAll:
+			case TestService_successRuleAll:
 				if err != nil {
 					t.Fatal(err.Error())
 				}
-			case successRuleOnce:
+			case TestService_successRuleOnce:
 				if i == loop && err != nil {
 					t.Fatal(err.Error())
 				}

@@ -24,7 +24,7 @@ type {{.GRPCServiceName}}TestRunner struct {
 	Client {{.Package}}.{{.GRPCServiceName}}Client
 }
 
-// NewTestClient returns new {{.GRPCServiceName}}Runner.
+// NewTest{{.GRPCServiceName}}Client returns new {{.GRPCServiceName}}Runner.
 func NewTest{{.GRPCServiceName}}Client(client {{.Package}}.{{.GRPCServiceName}}Client) *{{.GRPCServiceName}}TestRunner {
 	return &{{.GRPCServiceName}}TestRunner{
 		Client: client,
