@@ -35,7 +35,8 @@ func ProcessRequest(req *plugin.CodeGeneratorRequest, genCodeFunc func(packageNa
 	for _, fname := range req.FileToGenerate {
 		f := files[fname]
 		for _, service := range f.GetService() {
-			packageName := f.GetOptions().GetGoPackage()
+			// packageName := f.GetOptions().GetGoPackage()
+			packageName := f.GetPackage()
 			serviceName := service.GetName()
 			methods := service.GetMethod()
 			genCode := genCodeFunc(packageName, serviceName, methods)

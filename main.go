@@ -5,15 +5,23 @@ import (
 
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 
-	"github.com/yoshd/protoc-gen-stest/generator"
-	"github.com/yoshd/protoc-gen-stest/processor"
+	"github.com/mm-technologies/protoc-gen-stest/generator"
+	"github.com/mm-technologies/protoc-gen-stest/processor"
 )
 
 var generateCodeFunc = func(packageName, serviceName string, methods []*descriptor.MethodDescriptorProto) string {
 	grpcMethods := make([]generator.GRPCMethod, len(methods))
 	for i, m := range methods {
 		reqType := m.GetInputType()[1:]
+		switch reqType {
+		case "google.protobuf.Empty":
+			reqType = "empty.Empty"
+		}
 		resType := m.GetOutputType()[1:]
+		switch resType {
+		case "google.protobuf.Empty":
+			resType = "empty.Empty"
+		}
 		grpcMethods[i] = generator.GRPCMethod{
 			Name:         m.GetName(),
 			RequestType:  reqType,

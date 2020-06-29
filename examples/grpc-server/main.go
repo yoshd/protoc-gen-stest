@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/yoshd/protoc-gen-stest/examples/pb"
+	"github.com/mm-technologies/protoc-gen-stest/examples/pb"
 )
 
 var (

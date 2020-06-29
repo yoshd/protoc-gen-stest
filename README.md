@@ -1,4 +1,4 @@
-![test](https://github.com/yoshd/protoc-gen-stest/workflows/Go/badge.svg)
+![test](https://github.com/mm-technologies/protoc-gen-stest/workflows/Go/badge.svg)
 
 # protoc-gen-stest
 
@@ -105,7 +105,7 @@ package examples
 import (
 	"testing"
 
-	"github.com/yoshd/protoc-gen-stest/examples/pb"
+	"github.com/mm-technologies/protoc-gen-stest/examples/pb"
 
 	"google.golang.org/grpc"
 )
@@ -137,7 +137,7 @@ import (
     "errors"
 	"testing"
 
-	"github.com/yoshd/protoc-gen-stest/examples/pb"
+	"github.com/mm-technologies/protoc-gen-stest/examples/pb"
 
 	"google.golang.org/grpc"
 )

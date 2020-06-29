@@ -1,7 +1,7 @@
 package generator
 
 var codeTemplate = `
-package {{.Package}}
+package test
 
 import (
 	"context"
@@ -14,15 +14,18 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	empty "github.com/golang/protobuf/ptypes/empty"
+
+	"grpc-scenario-test/{{.Package}}"
 )
 
 // {{.GRPCServiceName}}TestRunner is a runner to run the {{.GRPCServiceName}} service test.
 type {{.GRPCServiceName}}TestRunner struct {
-	Client {{.GRPCServiceName}}Client
+	Client {{.Package}}.{{.GRPCServiceName}}Client
 }
 
 // NewTestClient returns new {{.GRPCServiceName}}Runner.
-func NewTestClient(client {{.GRPCServiceName}}Client) *{{.GRPCServiceName}}TestRunner {
+func NewTest{{.GRPCServiceName}}Client(client {{.Package}}.{{.GRPCServiceName}}Client) *{{.GRPCServiceName}}TestRunner {
 	return &{{.GRPCServiceName}}TestRunner{
 		Client: client,
 	}
@@ -44,21 +47,21 @@ func (runner *{{.GRPCServiceName}}TestRunner) RunGRPCTest(t *testing.T, jsonPath
 }
 
 const (
-	actionJSONKey            = "action"
-	requestJSONKey           = "request"
-	expectedResponseJSONKey  = "expected_response"
-	errorExpectationJSONKey  = "error_expectation"
-	expectedErrorCodeJSONKey = "expected_error_code"
-	loopJSONKey              = "loop"
-	sleepJSONKey             = "sleep"
-	successRuleJSONKey       = "success_rule"
-	successRuleAll           = "all"
-	successRuleOnce          = "once"
+	{{.GRPCServiceName}}_actionJSONKey            = "action"
+	{{.GRPCServiceName}}_requestJSONKey           = "request"
+	{{.GRPCServiceName}}_expectedResponseJSONKey  = "expected_response"
+	{{.GRPCServiceName}}_errorExpectationJSONKey  = "error_expectation"
+	{{.GRPCServiceName}}_expectedErrorCodeJSONKey = "expected_error_code"
+	{{.GRPCServiceName}}_loopJSONKey              = "loop"
+	{{.GRPCServiceName}}_sleepJSONKey             = "sleep"
+	{{.GRPCServiceName}}_successRuleJSONKey       = "success_rule"
+	{{.GRPCServiceName}}_successRuleAll           = "all"
+	{{.GRPCServiceName}}_successRuleOnce          = "once"
 )
 
 func (runner *{{.GRPCServiceName}}TestRunner) runTest(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFuncMap map[string]*func(expectedResponse, response interface{}) error) {
 	var action string
-	if v, ok := testCase[actionJSONKey]; ok {
+	if v, ok := testCase[{{.GRPCServiceName}}_actionJSONKey]; ok {
 		action = v.(string)
 	} else {
 		panic("Scenario JSON is invalid. Because action is required.")
@@ -79,7 +82,7 @@ func (runner *{{.GRPCServiceName}}TestRunner) runTest(ctx context.Context, t *te
 {{- $PackageName := .Package }}
 {{ range $i, $v := .GRPCMethods }}
 func (runner *{{$GRPCServiceName}}TestRunner) test{{$v.Name}}(ctx context.Context, t *testing.T, testCase map[string]interface{}, compareFunc *func(expectedResponse, response interface{}) error) {
-	reqJSON, reqErr := json.Marshal(testCase[requestJSONKey])
+	reqJSON, reqErr := json.Marshal(testCase[{{$GRPCServiceName}}_requestJSONKey])
 	if reqErr != nil {
 		panic(reqErr)
 	}
@@ -87,13 +90,13 @@ func (runner *{{$GRPCServiceName}}TestRunner) test{{$v.Name}}(ctx context.Contex
 	json.Unmarshal(reqJSON, &req)
 
 	loop := 1
-	if v, ok := testCase[loopJSONKey]; ok {
+	if v, ok := testCase[{{$GRPCServiceName}}_loopJSONKey]; ok {
 		loop = int(v.(float64))
 	}
 FOR_LABEL:
 	for i := 1; i <= loop; i++ {
 		sleep := 0
-		if v, ok := testCase[sleepJSONKey]; ok {
+		if v, ok := testCase[{{$GRPCServiceName}}_sleepJSONKey]; ok {
 			sleep = int(v.(float64))
 		}
 		time.Sleep(time.Duration(sleep) * time.Second)
@@ -101,11 +104,11 @@ FOR_LABEL:
 		res, err := runner.Client.{{$v.Name}}(ctx, &req)
 
 		errExpectation := false
-		if v, ok := testCase[errorExpectationJSONKey]; ok {
+		if v, ok := testCase[{{$GRPCServiceName}}_errorExpectationJSONKey]; ok {
 			errExpectation = v.(bool)
 		}
 		if errExpectation {
-			errCodeF := testCase[expectedErrorCodeJSONKey].(float64)
+			errCodeF := testCase[{{$GRPCServiceName}}_expectedErrorCodeJSONKey].(float64)
 			errCodeU := uint32(errCodeF)
 			expectedErrCode := codes.Code(errCodeU)
 			if expectedErrCode != grpc.Code(err) {
@@ -113,14 +116,14 @@ FOR_LABEL:
 			}
 			break FOR_LABEL
 		} else {
-			resJSON, resErr := json.Marshal(testCase[expectedResponseJSONKey])
+			resJSON, resErr := json.Marshal(testCase[{{$GRPCServiceName}}_expectedResponseJSONKey])
 			if resErr != nil {
 				panic(resErr)
 			}
 			expectedRes := {{$v.ResponseType}}{}
 			json.Unmarshal(resJSON, &expectedRes)
-			successRule := successRuleAll
-			if v, ok := testCase[successRuleJSONKey]; ok {
+			successRule := {{$GRPCServiceName}}_successRuleAll
+			if v, ok := testCase[{{$GRPCServiceName}}_successRuleJSONKey]; ok {
 				successRule = v.(string)
 			}
 			var err error
@@ -134,11 +137,11 @@ FOR_LABEL:
 			}
 
 			switch successRule {
-			case successRuleAll:
+			case {{$GRPCServiceName}}_successRuleAll:
 				if err != nil {
 					t.Fatal(err.Error())
 				}
-			case successRuleOnce:
+			case {{$GRPCServiceName}}_successRuleOnce:
 				if i == loop && err != nil {
 					t.Fatal(err.Error())
 				}

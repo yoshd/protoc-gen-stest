@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/yoshd/protoc-gen-stest/examples/pb"
+	"github.com/mm-technologies/protoc-gen-stest/examples/pb"
 
 	"google.golang.org/grpc"
 )
